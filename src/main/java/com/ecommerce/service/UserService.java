@@ -4,7 +4,9 @@ import com.ecommerce.dto.request.UserRequest;
 import com.ecommerce.dto.response.UserResponse;
 import com.ecommerce.entity.Role;
 import com.ecommerce.entity.User;
+import com.ecommerce.exception.ResourceNotFoundException;
 import com.ecommerce.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -14,9 +16,11 @@ import java.util.List;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public UserResponse createUser(UserRequest request) {
@@ -24,7 +28,7 @@ public class UserService {
 
         user.setFullName(request.getFullName());
         user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setPhone(request.getPhone());
         user.setRole(Role.CUSTOMER);
 
@@ -46,7 +50,7 @@ public class UserService {
 
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id).orElseThrow(() ->
-                new RuntimeException("User with id " + id + " not found!"));
+                new ResourceNotFoundException("User with id " + id + " not found!"));
 
         UserResponse response = new UserResponse();
 
@@ -82,7 +86,7 @@ public class UserService {
 
     public UserResponse updateUser(Long id, UserRequest request) {
         User user = userRepository.findById(id).orElseThrow(() ->
-                new  RuntimeException("User with id " + id + " not found!"));
+                new ResourceNotFoundException("User with id " + id + " not found!"));
 
         user.setFullName(request.getFullName());
         user.setEmail(request.getEmail());
@@ -106,7 +110,7 @@ public class UserService {
 
     public void deleteUser(Long id) {
         User user = userRepository.findById(id).orElseThrow(() ->
-                new RuntimeException("User with id " + id + " not found!"));
+                new ResourceNotFoundException("User with id " + id + " not found!"));
 
         userRepository.delete(user);
     }

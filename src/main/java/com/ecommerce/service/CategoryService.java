@@ -3,7 +3,11 @@ package com.ecommerce.service;
 import com.ecommerce.dto.request.CategoryRequest;
 import com.ecommerce.dto.response.CategoryResponse;
 import com.ecommerce.entity.Category;
+import com.ecommerce.exception.ResourceNotFoundException;
 import com.ecommerce.repository.CategoryRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -19,10 +23,14 @@ public class CategoryService {
         this.categoryRepository = categoryRepository;
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "categories", allEntries = true),
+            @CacheEvict(value = "categoryById", allEntries = true)
+    })
     public CategoryResponse createCategory(CategoryRequest request) {
         Category category = new  Category();
 
-        category.setName(request.getName());
+        category.setCategoryName(request.getCategoryName());
         category.setDescription(request.getDescription());
         category.setImage(request.getImage());
 
@@ -30,7 +38,7 @@ public class CategoryService {
 
         CategoryResponse categoryResponse = new CategoryResponse();
         categoryResponse.setId(savedCategory.getId());
-        categoryResponse.setName(savedCategory.getName());
+        categoryResponse.setCategoryName(savedCategory.getCategoryName());
         categoryResponse.setDescription(savedCategory.getDescription());
         categoryResponse.setImage(savedCategory.getImage());
         categoryResponse.setActive(savedCategory.getActive());
@@ -39,14 +47,15 @@ public class CategoryService {
         return categoryResponse;
     }
 
+    @Cacheable(value = "categoryById", key = "#p0")
     public CategoryResponse getCategoryById(Long id) {
         Category category = categoryRepository.findById(id).orElseThrow(() ->
-                new RuntimeException("Category with id " + id + " not found!"));
+                new ResourceNotFoundException("Category with id " + id + " not found!"));
 
         CategoryResponse categoryResponse = new CategoryResponse();
 
         categoryResponse.setId(category.getId());
-        categoryResponse.setName(category.getName());
+        categoryResponse.setCategoryName(category.getCategoryName());
         categoryResponse.setDescription(category.getDescription());
         categoryResponse.setImage(category.getImage());
         categoryResponse.setActive(category.getActive());
@@ -56,6 +65,7 @@ public class CategoryService {
         return categoryResponse;
     }
 
+    @Cacheable(value = "categories", key = "'all'")
     public List<CategoryResponse> getAllCategories() {
         List<Category> categories = categoryRepository.findAll();
 
@@ -65,7 +75,7 @@ public class CategoryService {
             CategoryResponse categoryResponse = new CategoryResponse();
 
             categoryResponse.setId(category.getId());
-            categoryResponse.setName(category.getName());
+            categoryResponse.setCategoryName(category.getCategoryName());
             categoryResponse.setDescription(category.getDescription());
             categoryResponse.setImage(category.getImage());
             categoryResponse.setActive(category.getActive());
@@ -79,9 +89,9 @@ public class CategoryService {
 
     public CategoryResponse updateCategory(Long id, CategoryRequest request) {
         Category category = categoryRepository.findById(id).orElseThrow(() ->
-                new RuntimeException("Category with id " + id + " not found!"));
+                new ResourceNotFoundException("Category with id " + id + " not found!"));
 
-        category.setName(request.getName());
+        category.setCategoryName(request.getCategoryName());
         category.setDescription(request.getDescription());
         category.setImage(request.getImage());
 
@@ -90,7 +100,7 @@ public class CategoryService {
         CategoryResponse categoryResponse = new CategoryResponse();
 
         categoryResponse.setId(savedCategory.getId());
-        categoryResponse.setName(savedCategory.getName());
+        categoryResponse.setCategoryName(savedCategory.getCategoryName());
         categoryResponse.setDescription(savedCategory.getDescription());
         categoryResponse.setImage(savedCategory.getImage());
         categoryResponse.setActive(savedCategory.getActive());
@@ -102,7 +112,7 @@ public class CategoryService {
 
     public void deleteCategory(Long id) {
        Category category = categoryRepository.findById(id).orElseThrow(() ->
-               new RuntimeException("Category with id " + id + " not found!"));
+               new ResourceNotFoundException("Category with id " + id + " not found!"));
 
        categoryRepository.delete(category);
     }
